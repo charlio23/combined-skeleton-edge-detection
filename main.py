@@ -168,8 +168,6 @@ for epoch in range(epochs):
         quant_list = generate_quantise(quantise)
 
         image = Variable(image).cuda()
-        edge = Variable(edge).cuda()
-        skeleton = Variable(skeleton).cuda()
         
         sideOuts = nnet(image)
         edgeOuts = sideOuts[:6]
