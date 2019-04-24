@@ -42,6 +42,7 @@ p = 1.2
 ###
 
 def balanced_binary_cross_entropy(input, target):
+    print("Max: ", torch.max(input), "Min: ", torch.min(input))
     batch, _, width, height = target.size()
     pos_index = (target >=0.5)
     neg_index = (target <0.5)        
