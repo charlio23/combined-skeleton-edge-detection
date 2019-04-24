@@ -24,13 +24,13 @@ def load_vgg16(net, path):
             j += 1
     return net
 
-def initialize_fsds(path):
+def initialize_net(path):
     net = CombinedHED_FSDS()
     return load_vgg16(net,path)
 
 class CombinedHED_FSDS(torch.nn.Module):
-        def __init__(self):
-        super(FSDS, self).__init__()
+    def __init__(self):
+        super(CombinedHED_FSDS, self).__init__()
 
         self.conv1 = torch.nn.Sequential(
             torch.nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3,
@@ -216,7 +216,7 @@ class CombinedHED_FSDS(torch.nn.Module):
 
         return crop1_margin, crop2_margin, crop3_margin, crop4_margin, crop5_margin
 
-    def forward(self, input):
+    def forward(self, image):
 
         height = image.size(2)
         width = image.size(3)
@@ -247,7 +247,7 @@ class CombinedHED_FSDS(torch.nn.Module):
         edgeSideOut4 = edgeUpsample4[:, :, self.crop4_margin:self.crop4_margin+height, self.crop4_margin:self.crop4_margin+width]
         edgeSideOut5 = edgeUpsample5[:, :, self.crop5_margin:self.crop5_margin+height, self.crop5_margin:self.crop5_margin+width]
 
-        edgeFuse = self.edgeFuse(torch.cat((sideOut1, sideOut2, sideOut3, sideOut4, sideOut5), 1))
+        edgeFuse = self.edgeFuse(torch.cat((edgeSideOut1, edgeSideOut2, edgeSideOut3, edgeSideOut4, edgeSideOut5), 1))
 
         edgeSideOut1 = sigmoid(edgeSideOut1)
         edgeSideOut2 = sigmoid(edgeSideOut2)
@@ -270,16 +270,16 @@ class CombinedHED_FSDS(torch.nn.Module):
 
         # Aligned cropping.
         skeletonSideOut2 = skeletonUpsample2[:, :, self.crop2_margin:self.crop2_margin+height, self.crop2_margin:self.crop2_margin+width]
-        skeletonSideOut3 = skeletonUpsample2[:, :, self.crop3_margin:self.crop3_margin+height, self.crop3_margin:self.crop3_margin+width]
-        skeletonSideOut4 = skeletonUpsample2[:, :, self.crop4_margin:self.crop4_margin+height, self.crop4_margin:self.crop4_margin+width]
-        skeletonSideOut5 = skeletonUpsample2[:, :, self.crop5_margin:self.crop5_margin+height, self.crop5_margin:self.crop5_margin+width]
+        skeletonSideOut3 = skeletonUpsample3[:, :, self.crop3_margin:self.crop3_margin+height, self.crop3_margin:self.crop3_margin+width]
+        skeletonSideOut4 = skeletonUpsample4[:, :, self.crop4_margin:self.crop4_margin+height, self.crop4_margin:self.crop4_margin+width]
+        skeletonSideOut5 = skeletonUpsample5[:, :, self.crop5_margin:self.crop5_margin+height, self.crop5_margin:self.crop5_margin+width]
 
         skeletonFuseScale0 = torch.cat((skeletonSideOut2[:,0:1,:,:], skeletonSideOut3[:,0:1,:,:], skeletonSideOut4[:,0:1,:,:], skeletonSideOut5[:,0:1,:,:] ),1)
         skeletonFuseScale1 = torch.cat((skeletonSideOut2[:,1:2,:,:], skeletonSideOut3[:,1:2,:,:], skeletonSideOut4[:,1:2,:,:], skeletonSideOut5[:,1:2,:,:] ),1)
         skeletonFuseScale2 = torch.cat((skeletonSideOut3[:,2:3,:,:], skeletonSideOut4[:,2:3,:,:], skeletonSideOut5[:,2:3,:,:] ),1)
         skeletonFuseScale3 = torch.cat((skeletonSideOut4[:,3:4,:,:], skeletonSideOut5[:,3:4,:,:] ),1)
         skeletonFuseScale4 = skeletonSideOut5[:,4:5,:,:]
-        
+
         skeletonFuseScale0 = self.skeletonFuseScale0(skeletonFuseScale0)
         skeletonFuseScale1 = self.skeletonFuseScale1(skeletonFuseScale1)
         skeletonFuseScale2 = self.skeletonFuseScale2(skeletonFuseScale2)

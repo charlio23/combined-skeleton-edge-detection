@@ -1,17 +1,15 @@
-from dataset import BSDS, TrainDataset, COCO, SKLARGE
-from model import initialize_hed
-from torch.utils.data import DataLoader, ConcatDataset
-import torchvision.transforms as transforms
+from dataset import SKLARGE
+from network import initialize_net
+from torch.utils.data import DataLoader
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import torch.optim as optim
 from PIL import Image
-from torch import sigmoid
 from torch.nn.functional import binary_cross_entropy
+from torch.nn.functional import cross_entropy
 from torch.autograd import Variable
 import time
-from itertools import chain
 from tqdm import tqdm
 from torch.optim import lr_scheduler
 from collections import defaultdict
@@ -30,7 +28,7 @@ print("Initializing network...")
 
 modelPath = "../DeepSkeleton-pytorch/model/vgg16.pth"
 
-nnet = torch.nn.DataParallel(initialize_hed(modelPath)).cuda()
+nnet = torch.nn.DataParallel(initialize_net(modelPath)).cuda()
 
 train = DataLoader(trainDS, shuffle=True, batch_size=1, num_workers=4)
 
@@ -165,19 +163,19 @@ for epoch in range(epochs):
     print("Epoch: " + str(epoch + 1))
     for j, (image, edge, skeleton) in enumerate(tqdm(train), 1):
 
-        image = Variable(image).cuda()
-        edge = Variable(edge).cuda()
-        skeleton = Variable(skeleton).cuda()
-
         quantization = np.vectorize(apply_quantization)
         quantise = torch.from_numpy(quantization(skeleton.numpy())).squeeze_(1).cuda()
         quant_list = generate_quantise(quantise)
 
+        image = Variable(image).cuda()
+        edge = Variable(edge).cuda()
+        skeleton = Variable(skeleton).cuda()
+        
         sideOuts = nnet(image)
         edgeOuts = sideOuts[:6]
         skeletonOuts = sideOuts[6:]
 
-        loss_edge = sum([balanced_binary_cross_entropy(sideOut, target) for sideOut in edgeOuts])
+        loss_edge = sum([balanced_binary_cross_entropy(sideOut, edge) for sideOut in edgeOuts])
         loss_skeleton = sum([balanced_cross_entropy(sideOut, quant) for sideOut, quant in zip(skeletonOuts,quant_list)])
         loss = loss_edge + loss_skeleton
         lossAvg = loss/train_size
@@ -214,7 +212,7 @@ for epoch in range(epochs):
     plt.save("images/edge_detection.png")
     plt.clf()
     fig = plt.figure(figsize=(15,5))
-    for k in range(6:11):
+    for k in range(6,11):
         plt.subplot(1,5,k - 6)
         sideImg = grayTrans(sideOuts[k])
         plt.imshow(sideImg)
