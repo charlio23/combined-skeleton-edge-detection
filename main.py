@@ -13,6 +13,7 @@ import time
 from tqdm import tqdm
 from torch.optim import lr_scheduler
 from collections import defaultdict
+import os
 
 def grayTrans(img):
     img = img.data.cpu().numpy()[0][0]*255.0
