@@ -196,8 +196,8 @@ for epoch in range(epochs):
             lossAcc = 0.0
         i += 1
 
-    os.makedirs("images", exists_ok=True)
-    os.makedirs("checkpoints", exists_ok=True)
+    os.makedirs("images", exist_ok=True)
+    os.makedirs("checkpoints", exist_ok=True)
     torch.save(nnet.state_dict(), 'checkpoints/COMBINED-SKLARGE.pth')
     plt.clf()
     plt.plot(epoch_line,loss_line)
