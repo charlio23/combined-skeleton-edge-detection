@@ -34,7 +34,7 @@ train = DataLoader(trainDS, shuffle=True, batch_size=1, num_workers=4)
 
 print("Defining hyperparameters...")
 ### HYPER-PARAMETERS
-learningRate = 1e-6
+learningRate = 1e-7
 momentum = 0.9
 weightDecay = 0.0002
 receptive_fields = np.array([14,40,92,196])
