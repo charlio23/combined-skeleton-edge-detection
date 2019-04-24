@@ -47,7 +47,7 @@ def balanced_binary_cross_entropy(input, target):
     neg_index = (target <0.5)        
     weight = torch.zeros_like(target)
     sum_num = width*height
-    pos_num = pos_index.sum().item()
+    pos_num = pos_index.sum().cpu().item()
     neg_num = sum_num - pos_num
     sum_num = pos_num + neg_num
     weight[pos_index] = neg_num / sum_num
@@ -168,6 +168,8 @@ for epoch in range(epochs):
         quant_list = generate_quantise(quantise)
 
         image = Variable(image).cuda()
+        edge = Variable(edge).cuda()
+        skeleton = Variable(skeleton).cuda()
         
         sideOuts = nnet(image)
         edgeOuts = sideOuts[:6]
