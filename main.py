@@ -207,14 +207,14 @@ for epoch in range(epochs):
     plt.clf()
     fig = plt.figure(figsize=(15,5))
     for k in range(0,6):
-        plt.subplot(1,6,k)
+        plt.subplot(1,6,k + 1)
         sideImg = grayTrans(sideOuts[k])
         plt.imshow(sideImg)
     plt.save("images/edge_detection.png")
     plt.clf()
     fig = plt.figure(figsize=(15,5))
     for k in range(6,11):
-        plt.subplot(1,5,k - 6)
+        plt.subplot(1,5,k - 5)
         sideImg = grayTrans(sideOuts[k])
         plt.imshow(sideImg)
     plt.save("images/skeleton_detection.png")
