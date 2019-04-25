@@ -159,6 +159,7 @@ epoch_line = []
 loss_line = []
 nnet.train()
 optimizer.zero_grad()
+soft = torch.nn.Softmax(dim=1)
 
 for epoch in range(epochs):
     print("Epoch: " + str(epoch + 1))
@@ -206,15 +207,21 @@ for epoch in range(epochs):
     plt.clf()
     fig = plt.figure(figsize=(15,5))
     for k in range(0,6):
-        plt.subplot(1,6,k + 1)
+        plt.subplot(1,7,k + 1)
         sideImg = grayTrans(sideOuts[k])
         plt.imshow(sideImg)
+    plt.subplot(1,7,7)
+    sideImg = grayTrans(edge)
+    plt.imshow(sideImg)
     plt.savefig("images/edge_detection.png")
     plt.clf()
     fig = plt.figure(figsize=(15,5))
     for k in range(6,11):
-        plt.subplot(1,5,k - 5)
-        sideImg = grayTrans(sideOuts[k])
+        plt.subplot(1,6,k - 5)
+        sideImg = grayTrans((1 - soft(sideOuts[k])[0][0]).unsqueeze_(0).unsqueeze_(0))
         plt.imshow(sideImg)
+    plt.subplot(1,6,6)
+    sideImg = grayTrans((quantise > 0.5).unsqueeze_(0))
+    plt.imshow(sideImg)
     plt.savefig("images/skeleton_detection.png")
     plt.clf()
