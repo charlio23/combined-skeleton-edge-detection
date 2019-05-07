@@ -5,6 +5,42 @@ import os
 from PIL import Image
 import numpy as np
 import pandas as pd
+from scipy.ndimage.morphology import distance_transform_edt as bwdist
+
+
+class COCO(Dataset):
+    def __init__(self, rootDir, offline=False):
+        self.rootDirImg = rootDir + "images/"
+        self.rootDirGt = rootDir + "groundTruth/" + "skeletons/"
+        self.rootDirGtEdges = rootDir + "groundTruth/" + "edges/"
+        self.listData = sorted(os.listdir(self.rootDirGt))
+    def __len__(self):
+        return len(self.listData)
+                
+    def __getitem__(self, i):
+        # input and target images
+        inputName = self.listData[i]
+        targetName = self.listData[i]
+        # process the images
+        transf = transforms.ToTensor()
+        inputImage = transf(Image.open(self.rootDirImg + inputName).convert('RGB'))
+
+        tensorBlue = (inputImage[0:1, :, :] * 255.0) - 104.00698793
+        tensorGreen = (inputImage[1:2, :, :] * 255.0) - 116.66876762
+        tensorRed = (inputImage[2:3, :, :] * 255.0) - 122.67891434
+        inputImage = torch.cat([ tensorBlue, tensorGreen, tensorRed ], 0)
+
+        targetImage = transf(Image.open(self.rootDirGt + targetName).convert('L')).squeeze_(0).numpy()> 0.5
+        edge = (transf(Image.open(self.rootDirGtEdges + targetName).convert('L')).squeeze_(0).numpy()> 0.5).astype(float)
+        dist = 2.0*bwdist(1.0 - edge)
+        make_scale = np.vectorize(lambda x, y: 0 if y < 0.99 else x)
+
+        edgeTargetImage = tensor.from_numpy(edge)
+
+        scale = make_scale(dist, skeletonTargetImage)
+        skeletonTargetImage = torch.from_numpy(scale).float().unsqueeze_(0)
+
+        return inputImage, edgeTargetImage, skeletonTargetImage
 
 class SKLARGE(Dataset):
     def __init__(self, fileNames, rootDir):
@@ -38,3 +74,25 @@ class SKLARGE(Dataset):
         skeletonTargetImage = self.targetTransform(skeletonTargetImage)
         
         return inputImage, edgeTargetImage, skeletonTargetImage
+
+class SKLARGE_TEST(Dataset):
+    def __init__(self, rootDirImg):
+        self.rootDirImg = rootDirImg
+        self.listData = sorted(os.listdir(rootDirImg))
+
+    def __len__(self):
+        return len(self.listData)
+                
+    def __getitem__(self, i):
+        # input and target images
+        inputName = self.listData[i]
+        # process the images
+        transf = transforms.ToTensor()
+        inputImage = transf(Image.open(self.rootDirImg + inputName).convert('RGB'))
+        tensorBlue = (inputImage[0:1, :, :] * 255.0) - 104.00698793
+        tensorGreen = (inputImage[1:2, :, :] * 255.0) - 116.66876762
+        tensorRed = (inputImage[2:3, :, :] * 255.0) - 122.67891434
+        inputImage = torch.cat([ tensorBlue, tensorGreen, tensorRed ], 0)
+        
+        inputName = inputName.split(".jpg")[0] + ".png"
+        return inputImage, inputName

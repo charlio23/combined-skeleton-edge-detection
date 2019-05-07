@@ -1,4 +1,4 @@
-from dataset import SKLARGE
+from dataset import SKLARGE, COCO
 from network import initialize_net
 from torch.utils.data import DataLoader
 import torch
@@ -21,9 +21,15 @@ def grayTrans(img):
     img = Image.fromarray(img, 'L')
     return img
 
+image_dir = "images-coco"
+os.makedirs(image_dir, exist_ok=True)
+model_save_name = "FSDS-COCO.pth"
+
 print("Importing datasets...")
 #SK-LARGE
-trainDS = SKLARGE("../DeepSkeleton-pytorch/SK-LARGE/aug_data/train_pair.lst", "../DeepSkeleton-pytorch/SK-LARGE/")
+#trainDS = SKLARGE("../DeepSkeleton-pytorch/SK-LARGE/aug_data/train_pair.lst", "../DeepSkeleton-pytorch/SK-LARGE/")
+
+trainDS = COCO("../train2017/",True)
 
 print("Initializing network...")
 
@@ -196,14 +202,14 @@ for epoch in range(epochs):
             print("%s epoch: %d iter:%d loss:%.6f"%(timestr, epoch+1, i, lossDisp))
             lossAcc = 0.0
         i += 1
-    os.makedirs("images", exist_ok=True)
+
     os.makedirs("checkpoints", exist_ok=True)
-    torch.save(nnet.state_dict(), 'checkpoints/COMBINED-SKLARGE.pth')
+    torch.save(nnet.state_dict(), 'checkpoints/' + model_save_name)
     plt.clf()
     plt.plot(epoch_line,loss_line)
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
-    plt.savefig("images/loss.png")
+    plt.savefig(image_dir + "/loss.png")
     plt.clf()
     fig = plt.figure(figsize=(15,5))
     for k in range(0,6):
@@ -213,7 +219,7 @@ for epoch in range(epochs):
     plt.subplot(1,7,7)
     sideImg = grayTrans(edge)
     plt.imshow(sideImg)
-    plt.savefig("images/edge_detection.png")
+    plt.savefig(image_dir + "edge_detection.png")
     plt.clf()
     fig = plt.figure(figsize=(15,5))
     for k in range(6,11):
@@ -223,5 +229,5 @@ for epoch in range(epochs):
     plt.subplot(1,6,6)
     sideImg = grayTrans((quantise > 0.5).unsqueeze_(0))
     plt.imshow(sideImg)
-    plt.savefig("images/skeleton_detection.png")
+    plt.savefig(image_dir + "skeleton_detection.png")
     plt.clf()
