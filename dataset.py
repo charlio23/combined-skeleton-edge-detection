@@ -35,7 +35,7 @@ class COCO(Dataset):
         dist = 2.0*bwdist(1.0 - edge)
         make_scale = np.vectorize(lambda x, y: 0 if y < 0.99 else x)
 
-        edgeTargetImage = tensor.from_numpy(edge)
+        edgeTargetImage = torch.from_numpy(edge)
 
         scale = make_scale(dist, skeletonTargetImage)
         skeletonTargetImage = torch.from_numpy(scale).float().unsqueeze_(0)
