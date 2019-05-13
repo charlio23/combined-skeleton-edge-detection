@@ -24,4 +24,6 @@ for fileName in tqdm(fileList):
 
     fileName = fileName.replace('.jpg','.png')
     
+    Image.fromarray(edge.astype(np.uint8), 'L').save(edgeDir + fileName)
+    Image.fromarray(skeleton.astype(np.uint8), 'L').save(skeletonDir + fileName)
     Image.fromarray(scale, 'L').save(scaleDir + fileName)
