@@ -124,6 +124,16 @@ class CombinedHED_FSDS(torch.nn.Module):
 
         self.skeletonFuseScale4 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=1, stride=1, padding=0)
 
+        #Skeleton Scale
+
+        self.skeletonSideOutScale2 = torch.nn.Conv2d(in_channels=128, out_channels=1, kernel_size=1, stride=1, padding=0)
+
+        self.skeletonSideOutScale3 = torch.nn.Conv2d(in_channels=256, out_channels=1, kernel_size=1, stride=1, padding=0)
+
+        self.skeletonSideOutScale4 = torch.nn.Conv2d(in_channels=512, out_channels=1, kernel_size=1, stride=1, padding=0)
+
+        self.skeletonSideOutScale5 = torch.nn.Conv2d(in_channels=512, out_channels=1, kernel_size=1, stride=1, padding=0)
+
         # Bilinear weights for upsampling
 
         self.edgeWeightDeconv2 = make_bilinear_weights(4, 1)
@@ -287,8 +297,26 @@ class CombinedHED_FSDS(torch.nn.Module):
         
         skeletonFuse = torch.cat((skeletonFuseScale0,skeletonFuseScale1, skeletonFuseScale2, skeletonFuseScale3, skeletonFuseScale4), 1)
         
+        score_dsnScale2 = self.skeletonSideOutScale2(conv2)
+        score_dsnScale3 = self.skeletonSideOutScale3(conv3)
+        score_dsnScale4 = self.skeletonSideOutScale4(conv4)
+        score_dsnScale5 = self.skeletonSideOutScale5(conv5)
 
-        return edgeSideOut1, edgeSideOut2, edgeSideOut3, edgeSideOut4, edgeSideOut5, edgeFuse, skeletonSideOut2, skeletonSideOut3, skeletonSideOut4, skeletonSideOut5, skeletonFuse
+        upsampleScale2 = torch.nn.functional.conv_transpose2d(score_dsnScale2, self.edgeWeightDeconv2, stride=2)
+        upsampleScale3 = torch.nn.functional.conv_transpose2d(score_dsnScale3, self.edgeWeightDeconv3, stride=4)
+        upsampleScale4 = torch.nn.functional.conv_transpose2d(score_dsnScale4, self.edgeWeightDeconv4, stride=8)
+        upsampleScale5 = torch.nn.functional.conv_transpose2d(score_dsnScale5, self.edgeWeightDeconv5, stride=16)
+
+        # Aligned cropping.
+        sideOutScale2 = upsampleScale2[:, :, self.crop2_margin:self.crop2_margin+image_h,
+                                self.crop2_margin:self.crop2_margin+image_w]
+        sideOutScale3 = upsampleScale3[:, :, self.crop3_margin:self.crop3_margin+image_h,
+                                self.crop3_margin:self.crop3_margin+image_w]
+        sideOutScale4 = upsampleScale4[:, :, self.crop4_margin:self.crop4_margin+image_h,
+                                self.crop4_margin:self.crop4_margin+image_w]
+        sideOutScale5 = upsampleScale5[:, :, self.crop5_margin:self.crop5_margin+image_h,
+                                self.crop5_margin:self.crop5_margin+image_w]
+        return edgeSideOut1, edgeSideOut2, edgeSideOut3, edgeSideOut4, edgeSideOut5, edgeFuse, skeletonSideOut2, skeletonSideOut3, skeletonSideOut4, skeletonSideOut5, skeletonFuse, sideOutScale2, sideOutScale3, sideOutScale4, sideOutScale4
 
 def make_bilinear_weights(size, num_channels):
     """ Generate bi-linear interpolation weights as up-sampling filters (following FCN paper). """

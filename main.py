@@ -37,7 +37,7 @@ modelPath = "../DeepSkeleton-pytorch/model/vgg16.pth"
 
 nnet = torch.nn.DataParallel(initialize_net(modelPath)).cuda()
 
-train = DataLoader(trainDS, shuffle=True, batch_size=1, num_workers=4)
+train = DataLoader(trainDS, shuffle=True, batch_size=4, num_workers=4)
 
 print("Defining hyperparameters...")
 ### HYPER-PARAMETERS
@@ -71,9 +71,16 @@ def balanced_cross_entropy(input, target):
     weights = torch.ones(input.size(1))*neg_weight
     weights[0] = pos_weight
     #CE loss
-    loss = cross_entropy(input,target,weight=weights.cuda(),reduction='none')
+    loss = cross_entropy(input,target.squeeze_(1),weight=weights.cuda(),reduction='none')
 
     return torch.sum(loss)/batch
+
+def regressor_loss(input, targetScale, targetQuant):
+    weight = (targetQuant > 0.01).float()
+    loss = torch.sum(weight*mse_loss(input, targetScale, reduction='none'))
+    batch = targetScale.shape[0]
+    return loss/batch
+
 def generate_quantise(quantise):
     result = []
     for i in range(1,5):
@@ -123,13 +130,17 @@ for name, param in nnet.named_parameters():
                   'module.edgeSideOut3.weight',
                   'module.edgeSideOut4.weight', 'module.edgeSideOut5.weight','module.skeletonFuseScale2.weight', 
                   'module.skeletonSideOut2.weight','module.skeletonSideOut3.weight',
-                  'module.skeletonSideOut4.weight','module.skeletonSideOut5.weight']:
+                  'module.skeletonSideOut4.weight','module.skeletonSideOut5.weight',
+                  'module.skeletonSideOutScale2.weight', 'module.skeletonSideOutScale3.weight',
+                  'module.skeletonSideOutScale3.weight', 'module.skeletonSideOutScale5.weight']:
         print('{:26} lr: 0.01 decay:1'.format(name)); net_parameters_id['score_dsn_1-5.weight'].append(param)
     elif name in ['module.edgeSideOut1.bias', 'module.edgeSideOut2.bias',
                   'module.edgeSideOut3.bias', 'module.edgeSideOut4.bias',
                   'module.edgeSideOut5.bias',
                   'module.skeletonSideOut2.bias','module.skeletonSideOut3.bias',
-                  'module.skeletonSideOut4.bias','module.skeletonSideOut5.bias']:
+                  'module.skeletonSideOut4.bias','module.skeletonSideOut5.bias'
+                  'module.skeletonSideOutScale2.bias', 'module.skeletonSideOutScale3.bias',
+                  'module.skeletonSideOutScale3.bias', 'module.skeletonSideOutScale5.bias']:
         print('{:26} lr: 0.02 decay:0'.format(name)); net_parameters_id['score_dsn_1-5.bias'].append(param)
     elif name in ['module.skeletonFuseScale0.weight', 'module.skeletonFuseScale1.weight',
                   'module.skeletonFuseScale3.weight','module.skeletonFuseScale4.weight', 'module.edgeFuse.weight']:
@@ -164,6 +175,7 @@ train_size = 10
 epoch_line = []
 loss_line = []
 nnet.train()
+L = 0.5
 optimizer.zero_grad()
 soft = torch.nn.Softmax(dim=1)
 
@@ -172,20 +184,23 @@ for epoch in range(epochs):
     for j, (image, edge, skeleton) in enumerate(tqdm(train), 1):
 
         quantization = np.vectorize(apply_quantization)
-        quantise = torch.from_numpy(quantization(skeleton.numpy())).squeeze_(1).cuda()
+        quantise = torch.from_numpy(quantization(skeleton.numpy())).cuda()
         quant_list = generate_quantise(quantise)
 
         image = Variable(image).cuda()
         edge = Variable(edge).cuda()
         skeleton = Variable(skeleton).cuda()
-        
+        scale_list = generate_scales(quant_list, receptive_fields, skeleton)
+
         sideOuts = nnet(image)
         edgeOuts = sideOuts[:6]
-        skeletonOuts = sideOuts[6:]
+        skeletonOuts = sideOuts[6:11]
+        scaleOuts = sideOuts[11:]
 
         loss_edge = sum([balanced_binary_cross_entropy(sideOut, edge) for sideOut in edgeOuts])
         loss_skeleton = sum([balanced_cross_entropy(sideOut, quant) for sideOut, quant in zip(skeletonOuts,quant_list)])
-        loss = loss_edge + loss_skeleton
+        loss_list_scale = sum([regressor_loss(sideOut, scale, quant) for sideOut, scale, quant in zip(scaleOuts,scale_list,quant_list[0:4])])
+        loss = loss_edge + loss_skeleton + L*loss_list_scale
         lossAvg = loss/train_size
         lossAvg.backward()
         lossAcc += loss.clone().item()
