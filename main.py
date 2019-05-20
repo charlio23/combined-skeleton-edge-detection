@@ -7,7 +7,7 @@ import numpy as np
 import torch.optim as optim
 from PIL import Image
 from torch.nn.functional import binary_cross_entropy
-from torch.nn.functional import cross_entropy
+from torch.nn.functional import cross_entropy, mse_loss
 from torch.autograd import Variable
 import time
 from tqdm import tqdm
