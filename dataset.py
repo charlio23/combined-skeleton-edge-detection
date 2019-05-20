@@ -30,14 +30,15 @@ class COCO(Dataset):
         tensorRed = (inputImage[2:3, :, :] * 255.0) - 122.67891434
         inputImage = torch.cat([ tensorBlue, tensorGreen, tensorRed ], 0)
 
-        targetImage = transf(Image.open(self.rootDirGt + targetName).convert('L'))*255.0
+        targetImageSkeleton = transf(Image.open(self.rootDirGt + targetName).convert('L'))*255.0
+        targetImageEdge = transf(Image.open(self.rootDirGtEdges + targetName).convert('L'))
         #edge = transf(Image.open(self.rootDirGtEdges + targetName).convert('L')).squeeze_(0).numpy()> 0.5
         #dist = 2.0*bwdist(1.0 - (edge.astype(float)))
         #make_scale = np.vectorize(lambda x, y: 0 if y < 0.99 else x)
 
         #scale = make_scale(dist,targetImage)
         #targetImage = torch.from_numpy(scale).float().unsqueeze_(0)
-        return inputImage, targetImage
+        return inputImage, targetImageEdge, targetImageSkeleton
 
 class SKLARGE(Dataset):
     def __init__(self, fileNames, rootDir):
