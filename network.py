@@ -321,14 +321,14 @@ class CombinedHED_FSDS(torch.nn.Module):
         upsampleScale5 = torch.nn.functional.conv_transpose2d(score_dsnScale5, self.edgeWeightDeconv5, stride=16)
 
         # Aligned cropping.
-        sideOutScale2 = upsampleScale2[:, :, self.crop2_margin:self.crop2_margin+image_h,
-                                self.crop2_margin:self.crop2_margin+image_w]
-        sideOutScale3 = upsampleScale3[:, :, self.crop3_margin:self.crop3_margin+image_h,
-                                self.crop3_margin:self.crop3_margin+image_w]
-        sideOutScale4 = upsampleScale4[:, :, self.crop4_margin:self.crop4_margin+image_h,
-                                self.crop4_margin:self.crop4_margin+image_w]
-        sideOutScale5 = upsampleScale5[:, :, self.crop5_margin:self.crop5_margin+image_h,
-                                self.crop5_margin:self.crop5_margin+image_w]
+        sideOutScale2 = upsampleScale2[:, :, self.crop2_margin:self.crop2_margin+height,
+                                self.crop2_margin:self.crop2_margin+width]
+        sideOutScale3 = upsampleScale3[:, :, self.crop3_margin:self.crop3_margin+height,
+                                self.crop3_margin:self.crop3_margin+width]
+        sideOutScale4 = upsampleScale4[:, :, self.crop4_margin:self.crop4_margin+height,
+                                self.crop4_margin:self.crop4_margin+width]
+        sideOutScale5 = upsampleScale5[:, :, self.crop5_margin:self.crop5_margin+height,
+                                self.crop5_margin:self.crop5_margin+width]
         return edgeSideOut1, edgeSideOut2, edgeSideOut3, edgeSideOut4, edgeSideOut5, edgeFuse, skeletonSideOut2, skeletonSideOut3, skeletonSideOut4, skeletonSideOut5, skeletonFuse, sideOutScale2, sideOutScale3, sideOutScale4, sideOutScale4
 
 def make_bilinear_weights(size, num_channels):
