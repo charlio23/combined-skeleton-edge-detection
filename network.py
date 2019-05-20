@@ -24,8 +24,21 @@ def load_vgg16(net, path):
             j += 1
     return net
 
-def initialize_net(path):
+def load_checkpoint(net, path):
+    dic = torch.load(path)
+    dicli = list(dic.keys())
+    new = {}
+    j = 0
+    for k in net.state_dict():
+        new[k] = dic[dicli[j]]
+        j += 1
+    net.load_state_dict(new)
+    return net
+
+def initialize_net(path, continue_train, path_HED=None):
     net = CombinedHED_FSDS()
+    if continue_train:
+        return load_checkpoint(net,path_HED)
     return load_vgg16(net,path)
 
 class CombinedHED_FSDS(torch.nn.Module):

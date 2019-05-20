@@ -14,6 +14,7 @@ from tqdm import tqdm
 from torch.optim import lr_scheduler
 from collections import defaultdict
 import os
+import argparse
 
 def grayTrans(img):
     img = img.data.cpu().numpy()[0][0]*255.0
@@ -21,9 +22,13 @@ def grayTrans(img):
     img = Image.fromarray(img, 'L')
     return img
 
+parser = argparse.ArgumentParser(description='Combined HED and LMSDS network training.')
+parser.add_argument('--continue_train', default=False, help='Decide if you want to restart training.', action='store_true')
+args = parser.parse_args()
+
 image_dir = "images-coco"
 os.makedirs(image_dir, exist_ok=True)
-model_save_name = "FSDS-COCO.pth"
+model_save_name = "Combined-COCO.pth"
 
 print("Importing datasets...")
 #SK-LARGE
@@ -35,7 +40,7 @@ print("Initializing network...")
 
 modelPath = "../DeepSkeleton-pytorch/model/vgg16.pth"
 
-nnet = torch.nn.DataParallel(initialize_net(modelPath)).cuda()
+nnet = torch.nn.DataParallel(initialize_net(modelPath, args.continue_train, model_save_name)).cuda()
 
 train = DataLoader(trainDS, shuffle=True, batch_size=4, num_workers=4)
 
