@@ -69,7 +69,7 @@ def balanced_binary_cross_entropy(input, target):
     return torch.sum(loss)/batch
 
 def balanced_cross_entropy(input, target):
-    batch, height, width = target.shape
+    batch, _, height, width = target.size()
     total_weight = height*width
     pos_weight = torch.sum(target > 0.1).item()/total_weight
     neg_weight = 1 - pos_weight
