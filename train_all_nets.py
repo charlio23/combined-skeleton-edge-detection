@@ -243,11 +243,11 @@ for epoch in range(epochs):
         skeleton_nms = (skeleton_nms*scale_map[:,1:]).detach()
 
         edge_new, ske_new = w.map_and_optimize(2*fused_edge - 1, scale_map,2*edge_nms - 1, skeleton_nms)
-        val = edge_new.max().item() - edge_new().min().item()
-        loss_pix2pix_edge = balanced_binary_cross_entropy((edge_new + val/2)/2, edge_nms)
+        
+        #loss_pix2pix_edge = balanced_binary_cross_entropy((edge_new + 1)/2, edge_nms)
         loss_pix2pix_skeleton = regressor_loss(ske_new, skeleton_nms, skeleton_nms)
 
-        loss = loss_edge + loss_skeleton + L*loss_list_scale + loss_pix2pix_edge + loss_pix2pix_skeleton
+        loss = loss_edge + loss_skeleton + L*loss_list_scale + loss_pix2pix_skeleton
         lossAvg = loss/train_size
         lossAvg.backward()
 
