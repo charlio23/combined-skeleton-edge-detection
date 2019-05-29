@@ -19,6 +19,12 @@ import matplotlib.pyplot as plt
 
 
 jointNetworkPath = "./checkpoints/Combined-COCO.pth"
+outDir = "./checkpoints/final_exp/"
+network_name = "Combined-COCO-pix2pix.pth"
+edge_net_D = "edge_net_D.pth"
+edge_net_G = "edge_net_G.pth"
+skeleton_net_D = "skeleton_net_D.pth"
+skeleton_net_G = "skeleton_net_G.pth"
 
 def grayTrans(img):
     img = img.data.cpu().numpy()[0][0]*255.0
@@ -28,13 +34,13 @@ def grayTrans(img):
 
 print("Loading dataset...")
 
-trainDS = COCO("../val2017/",True)
+trainDS = COCO("../train2017/",True)
 train = DataLoader(trainDS, shuffle=True, batch_size=1, num_workers=1)
 
 
 print("Loading joint edge/skeleton detectors...")
 
-nnet = CombinedHED_FSDS()
+nnet = torch.nn.DataParallel(CombinedHED_FSDS()).cuda()
 dic = torch.load(jointNetworkPath)
 dicli = list(dic.keys())
 new = {}
@@ -192,9 +198,9 @@ lr_schd = lr_scheduler.StepLR(optimizer, step_size=3e4, gamma=0.1)
 print("Training started!")
 epochs = 40
 i = 1
-dispInterval = 500
+dispInterval = 1
 lossAcc = 0.0
-train_size = 10
+train_size = 1
 epoch_line = []
 loss_line = []
 nnet.train()
@@ -205,12 +211,13 @@ for epoch in range(epochs):
     print("Epoch: " + str(epoch + 1))
     for j, (image, edge, skeleton) in enumerate(tqdm(train), 1):
         quantization = np.vectorize(apply_quantization)
-        quantise = torch.from_numpy(quantization(skeleton.numpy()))
+        quantise = torch.from_numpy(quantization(skeleton.numpy())).cuda()
         quant_list = generate_quantise(quantise)
 
-        image = Variable(image)
-        edge = Variable(edge)
-        skeleton = Variable(skeleton)
+        image = Variable(image).cuda()
+        edge = Variable(edge).cuda()
+        skeleton = Variable(skeleton).cuda()
+
         scale_list = generate_scales(quant_list, receptive_fields, skeleton)
 
         sideOuts = nnet(image)
@@ -225,25 +232,72 @@ for epoch in range(epochs):
         loss_list_scale = sum([regressor_loss(sideOut, scale, quant) for sideOut, scale, quant in zip(scaleOuts,scale_list,quant_list[0:4])])
         
         #pix2pix loss
-        fused_edge = edgeOuts[-1]
+        fused_edge = 2*edgeOuts[-1] - 1
         fused_skeleton = (1 - soft(skeletonOuts[-1])[0][0]).unsqueeze_(0).unsqueeze_(0)
         scale_map = obtain_scale_map(skeletonOuts[-1], scaleOuts)
         
-        edge_nms = torch.from_numpy(nms(fused_edge.data.cpu().numpy()[0][0])).unsqueeze_(0).unsqueeze_(0)
-        skeleton_nms = torch.from_numpy(nms(fused_skeleton.data.cpu().numpy()[0][0])).unsqueeze_(0).unsqueeze_(0)
+        edge_nms = torch.from_numpy(nms(fused_edge.data.cpu().numpy()[0][0])).cuda().unsqueeze_(0).unsqueeze_(0).detach().float()
+        skeleton_nms = torch.from_numpy(nms(fused_skeleton.data.cpu().numpy()[0][0])).cuda().unsqueeze_(0).unsqueeze_(0).float()
+        skeleton_nms[skeleton_nms < 0.5] = 0
+        skeleton_nms[skeleton_nms >= 0.5] = 1
+        skeleton_nms = (skeleton_nms*scale_map[:,1:]).detach()
 
-        plt.imshow(np.transpose(image[0].cpu().numpy(), (1, 2, 0)))
-        plt.show()
-        plt.imshow(grayTrans(fused_edge))
-        plt.show()
-        plt.imshow(grayTrans(edge_nms))
-        plt.show()
-        plt.imshow(grayTrans(skeleton_nms))
-        plt.show()
-        exit()
-        loss_pix2pix_edge = balanced_binary_cross_entropy(edge_new, edge_nms)
-        loss_pix2pix_skeleton = 0
+        edge_new, ske_new = w.map_and_optimize(fused_edge, scale_map,edge_nms, skeleton_nms)
+        
+        loss_pix2pix_edge = balanced_binary_cross_entropy((edge_new - 1)/2, (edge_nms - 1)/2)
+        loss_pix2pix_skeleton = regressor_loss(ske_new, skeleton_nms)
 
         loss = loss_edge + loss_skeleton + L*loss_list_scale + loss_pix2pix_edge + loss_pix2pix_skeleton
         lossAvg = loss/train_size
         lossAvg.backward()
+
+        if j % train_size == 0:
+            optimizer.step()
+            optimizer.zero_grad()
+            lr_schd.step()
+            
+        lossAcc += loss.clone().item()
+
+        if j%train_size == 0:
+            optimizer.step()
+            optimizer.zero_grad()
+            lr_schd.step()
+        if i%dispInterval == 0:
+            timestr = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+            lossDisp = lossAcc/dispInterval
+            epoch_line.append(epoch + (j - 1)/len(train))
+            loss_line.append(lossDisp)
+            print("%s epoch: %d iter:%d loss:%.6f"%(timestr, epoch+1, i, lossDisp))
+            lossAcc = 0.0
+            os.makedirs(outDir, exist_ok=True)
+            torch.save(nnet.state_dict(), outDir + network_name)
+            w.save_models(outDir, edge_net_D, edge_net_G, skeleton_net_D, skeleton_net_G)
+            plt.clf()
+            plt.plot(epoch_line,loss_line)
+            plt.xlabel("Epoch")
+            plt.ylabel("Loss")
+            plt.savefig(image_dir + "/loss.png")
+            plt.clf()
+            fig = plt.figure(figsize=(15,5))
+            for k in range(0,6):
+                plt.subplot(1,7,k + 1)
+                sideImg = grayTrans(sideOuts[k])
+                plt.imshow(sideImg)
+            plt.subplot(1,7,7)
+            sideImg = grayTrans(edge)
+            plt.imshow(sideImg)
+            plt.savefig(image_dir + "/edge_detection.png")
+            plt.clf()
+            fig = plt.figure(figsize=(15,5))
+            for k in range(6,11):
+                plt.subplot(1,6,k - 5)
+                sideImg = grayTrans((1 - soft(sideOuts[k])[0][0]).unsqueeze_(0).unsqueeze_(0))
+                plt.imshow(sideImg)
+            plt.subplot(1,6,6)
+            sideImg = grayTrans((quantise > 0.5).unsqueeze_(0))
+            plt.imshow(sideImg)
+            plt.savefig(image_dir + "/skeleton_detection.png")
+            plt.clf()
+
+        i += 1
+        exit()

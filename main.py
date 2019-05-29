@@ -239,7 +239,7 @@ for epoch in range(epochs):
     plt.subplot(1,7,7)
     sideImg = grayTrans(edge)
     plt.imshow(sideImg)
-    plt.savefig(image_dir + "edge_detection.png")
+    plt.savefig(image_dir + "/edge_detection.png")
     plt.clf()
     fig = plt.figure(figsize=(15,5))
     for k in range(6,11):
@@ -249,5 +249,5 @@ for epoch in range(epochs):
     plt.subplot(1,6,6)
     sideImg = grayTrans((quantise > 0.5).unsqueeze_(0))
     plt.imshow(sideImg)
-    plt.savefig(image_dir + "skeleton_detection.png")
+    plt.savefig(image_dir + "/skeleton_detection.png")
     plt.clf()
