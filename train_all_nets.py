@@ -298,6 +298,12 @@ for epoch in range(epochs):
             plt.imshow(sideImg)
             plt.savefig(image_dir + "/skeleton_detection.png")
             plt.clf()
-
+            fig = plt.figure(figsize=(15,5))
+            plt.subplot(1,2,1)
+            plt.imshow(grayTrans((edge_new + 1)/2))
+            plt.subplot(1,2,2)
+            plt.imshow(grayTrans((ske_new + 1)/2))
+            plt.savefig(image_dir + "/mapping.png")
+            plt.clf()
         i += 1
         exit()
