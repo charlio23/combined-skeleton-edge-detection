@@ -232,7 +232,7 @@ for epoch in range(epochs):
         loss_list_scale = sum([regressor_loss(sideOut, scale, quant) for sideOut, scale, quant in zip(scaleOuts,scale_list,quant_list[0:4])])
         
         #pix2pix loss
-        fused_edge = 2*edgeOuts[-1] - 1
+        fused_edge = edgeOuts[-1]
         fused_skeleton = (1 - soft(skeletonOuts[-1])[0][0]).unsqueeze_(0).unsqueeze_(0)
         scale_map = obtain_scale_map(skeletonOuts[-1], scaleOuts).cuda()
         
@@ -242,12 +242,12 @@ for epoch in range(epochs):
         skeleton_nms[skeleton_nms >= 0.5] = 1
         skeleton_nms = (skeleton_nms*scale_map[:,1:]).detach()
 
-        edge_new, ske_new = w.map_and_optimize(fused_edge, scale_map,edge_nms, skeleton_nms)
+        edge_new, ske_new = w.map_and_optimize(2*fused_edge - 1, scale_map,2*edge_nms - 1, skeleton_nms)
         
-        loss_pix2pix_edge = balanced_binary_cross_entropy((edge_new - 1)/2, (edge_nms - 1)/2)
+        loss_pix2pix_edge = balanced_binary_cross_entropy((edge_new - 1)/2, edge_nms)
         loss_pix2pix_skeleton = regressor_loss(ske_new, skeleton_nms, skeleton_nms)
 
-        loss = loss_edge + loss_skeleton + L*loss_list_scale + loss_pix2pix_edge + loss_pix2pix_skeleton
+        loss = loss_edge + loss_skeleton + L*loss_list_scale
         lossAvg = loss/train_size
         lossAvg.backward()
 
