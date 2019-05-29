@@ -8,52 +8,52 @@ def sobel_filters(img):
     Ix = ndimage.filters.convolve(img, Kx)
     Iy = ndimage.filters.convolve(img, Ky)
     
-    G = np.hypot(Ix, Iy)
-    G = G / G.max() * 255
-    theta = np.arctan2(Iy, Ix)
+    #G = np.hypot(Ix, Iy)
+    #G = G / G.max() * 255
+    #theta = np.arctan2(Iy, Ix)
     
-    return (G, theta)
+    return Ix, Iy
 
-def non_max_suppression(img, D):
-    M, N = img.shape
-    Z = np.zeros((M,N), dtype=np.int32)
-    angle = D * 180. / np.pi
-    angle[angle < 0] += 180
+def interp(img, h, w, x , y):
+    if x < 0:
+        x = 0
+    elif x > h - 1.001:
+        x = h - 1.001
+    if y < 0:
+        y = 0
+    elif y > w - 1.001:
+        y = w - 1.001
+    x0, y0 = int(x), int(y)
+    x1, y1 = x0 + 1, y0 + 1
+    dx0, dy0 = float(x) - float(x0), float(y) - float(y0)
+    dx1, dy1 = 1 - dx0, 1 - dy0
+    return img[x0,y0]*dx1*dy1 + img[x1,y0]*dx0*dy1 + img[x0,y1]*dx1*dy0 + img[x1,y1]*dx0*dy0;
 
-    
-    for i in range(1,M-1):
-        for j in range(1,N-1):
-            try:
-                q = 255
-                r = 255
-                
-               #angle 0
-                if (0 <= angle[i,j] < 22.5) or (157.5 <= angle[i,j] <= 180):
-                    q = img[i, j+1]
-                    r = img[i, j-1]
-                #angle 45
-                elif (22.5 <= angle[i,j] < 67.5):
-                    q = img[i+1, j-1]
-                    r = img[i-1, j+1]
-                #angle 90
-                elif (67.5 <= angle[i,j] < 112.5):
-                    q = img[i+1, j]
-                    r = img[i-1, j]
-                #angle 135
-                elif (112.5 <= angle[i,j] < 157.5):
-                    q = img[i-1, j-1]
-                    r = img[i+1, j+1]
 
-                if (img[i,j] >= q) and (img[i,j] >= r):
-                    Z[i,j] = img[i,j]
-                else:
-                    Z[i,j] = 0
+def nonmax(img, O, r, s, m):
+    h, w = img.shape
+    edge = np.zeros((h,w))
+    for i in range(h):
+        for j in range(w):
+            e = edge[i,j] = img[i,j]
+            if (e < 1e-4):
+                continue
+            e*= m
+            coso, sino = np.cos(O[i,j]), np.sin(O[i,j])
+            for d in range(-r, r+1):
+                if d:
+                    e0 = interp(img, h, w, i+d*coso, j+d*sino)
+                    if e < e0:
+                        edge[i,j] = 0
+                        break
+    return edge
 
-            except IndexError as e:
-                pass
-    
-    return Z
+
 
 def nms(img):
-	_, theta = sobel_filters(img)
-	return non_max_suppression(img, theta)
+    Ox, Oy = sobel_filters(img)
+    Oxx, _ = sobel_filters(Ox)
+    Oxy, Oyy = sobel_filters(Oy)
+    O = np.remainder(np.arctan(np.divide(np.multiply(Oyy, np.sign(-Oxy)),(Oxx + 1e-5))), np.pi)
+    E = nonmax(img, O, 1, 5, 1.01)
+    return E

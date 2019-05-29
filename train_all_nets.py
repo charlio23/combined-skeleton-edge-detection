@@ -34,7 +34,7 @@ train = DataLoader(trainDS, shuffle=True, batch_size=1, num_workers=1)
 
 print("Loading joint edge/skeleton detectors...")
 
-nnet = CombinedHED_FSDS().cuda()
+nnet = CombinedHED_FSDS()
 dic = torch.load(jointNetworkPath)
 dicli = list(dic.keys())
 new = {}
@@ -59,6 +59,8 @@ momentum = 0.9
 weightDecay = 0.0002
 receptive_fields = np.array([14,40,92,196])
 p = 1.2
+soft = torch.nn.Softmax(dim=1)
+
 ###
 
 def balanced_binary_cross_entropy(input, target):
@@ -84,7 +86,7 @@ def balanced_cross_entropy(input, target):
     weights = torch.ones(input.size(1))*neg_weight
     weights[0] = pos_weight
     #CE loss
-    loss = cross_entropy(input,target.squeeze_(1),weight=weights.cuda(),reduction='none')
+    loss = cross_entropy(input,target.squeeze_(1),weight=weights,reduction='none')
 
     return torch.sum(loss)/batch
 
@@ -114,6 +116,16 @@ def apply_quantization(scale):
     if p*scale > np.max(receptive_fields):
         return len(receptive_fields)
     return np.argmax(receptive_fields > p*scale) + 1
+
+def obtain_scale_map(loc_map, scale_map):
+    batch, _, height, width = loc_map.size()
+    value, ind = loc_map[0,1:].max(0)
+    probability_map = 2*(1 - soft(loc_map)[:,0:1]) - 1
+    scale_map = [(scale_map[i] + 1)*receptive_fields[i]/2 for i in range(0,len(scale_map))]
+    scale_map = torch.cat(scale_map, 1)
+    scale_map = 2*(scale_map.gather(1,ind.unsqueeze_(0).unsqueeze_(0)))/255.0 - 1
+    result = torch.cat([probability_map, scale_map],1)
+    return result
 
 print("Defining optimizer for combined edge/skeleton network...")
 
@@ -188,18 +200,17 @@ loss_line = []
 nnet.train()
 L = 0.5
 optimizer.zero_grad()
-soft = torch.nn.Softmax(dim=1)
 
 for epoch in range(epochs):
     print("Epoch: " + str(epoch + 1))
     for j, (image, edge, skeleton) in enumerate(tqdm(train), 1):
         quantization = np.vectorize(apply_quantization)
-        quantise = torch.from_numpy(quantization(skeleton.numpy())).cuda()
+        quantise = torch.from_numpy(quantization(skeleton.numpy()))
         quant_list = generate_quantise(quantise)
 
-        image = Variable(image).cuda()
-        edge = Variable(edge).cuda()
-        skeleton = Variable(skeleton).cuda()
+        image = Variable(image)
+        edge = Variable(edge)
+        skeleton = Variable(skeleton)
         scale_list = generate_scales(quant_list, receptive_fields, skeleton)
 
         sideOuts = nnet(image)
@@ -215,20 +226,24 @@ for epoch in range(epochs):
         
         #pix2pix loss
         fused_edge = edgeOuts[-1]
-        fused_skeleton = skeletonOuts[-1]
+        fused_skeleton = (1 - soft(skeletonOuts[-1])[0][0]).unsqueeze_(0).unsqueeze_(0)
+        scale_map = obtain_scale_map(skeletonOuts[-1], scaleOuts)
+        
         edge_nms = torch.from_numpy(nms(fused_edge.data.cpu().numpy()[0][0])).unsqueeze_(0).unsqueeze_(0)
-        #skeleton_nms = torch.from_numpy(nms(fused_skeleton.data.cpu().numpy()[0][0])).unsqueeze_(0).unsqueeze_(0)
-        edge_new, skeleton_new = w.map_and_optimize(fused_edge, fused_edge, edge_nms, edge_nms)
+        skeleton_nms = torch.from_numpy(nms(fused_skeleton.data.cpu().numpy()[0][0])).unsqueeze_(0).unsqueeze_(0)
+
+        plt.imshow(np.transpose(image[0].cpu().numpy(), (1, 2, 0)))
+        plt.show()
         plt.imshow(grayTrans(fused_edge))
         plt.show()
         plt.imshow(grayTrans(edge_nms))
         plt.show()
-        plt.imshow(grayTrans(skeleton_new))
+        plt.imshow(grayTrans(skeleton_nms))
         plt.show()
+        exit()
         loss_pix2pix_edge = balanced_binary_cross_entropy(edge_new, edge_nms)
         loss_pix2pix_skeleton = 0
 
         loss = loss_edge + loss_skeleton + L*loss_list_scale + loss_pix2pix_edge + loss_pix2pix_skeleton
         lossAvg = loss/train_size
         lossAvg.backward()
-        exit()

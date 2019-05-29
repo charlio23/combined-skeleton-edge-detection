@@ -3,6 +3,7 @@ from PIL import Image
 from torchvision import transforms
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 
 def grayTrans(img):
     img = img.data.cpu().numpy()[0][0]*255.0
@@ -14,14 +15,16 @@ w = Wrapper()
 
 transf = transforms.ToTensor()
 
-edge_img = transf(Image.open("test_skeleton.png").convert('L')).unsqueeze_(0)
-ske_img = transf(Image.open("test_edge.png").convert('L')).unsqueeze_(0)
-
+edge_img = 2*transf(Image.open("test_skeleton.png").convert('L')).unsqueeze_(0) - 1
+ske_img = 2*transf(Image.open("test_edge.png").convert('L')).unsqueeze_(0) - 1
+ske_img = torch.cat([ske_img, (ske_img > -1).float()*2 - 1.0], 1)
 edge_input = {'A': edge_img, 'B': ske_img, 'A_paths': None}
 ske_input = {'A': ske_img, 'B': edge_img, 'A_paths': None}
 
-skeleton = w.edge_to_skeleton(edge_input)
-edge = w.skeleton_to_edge(ske_input)
+skeleton = (w.edge_to_skeleton(edge_input) + 1)/2
+edge = (w.skeleton_to_edge(ske_input) + 1)/2
+
+print(torch.max(skeleton), torch.min(skeleton))
 
 plt.imshow(grayTrans(skeleton))
 plt.show()
