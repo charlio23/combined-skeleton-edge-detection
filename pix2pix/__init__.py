@@ -49,4 +49,10 @@ class Wrapper():
         ske_input = {'A': ske_img, 'B': real_edge, 'A_paths': None}
         new_edge = self.skeleton_to_edge(ske_input)
 
-        return new_edge, new_skeleton
+        return new_edge.cuda(), new_skeleton.cuda()
+
+    def save_models(self, outDir, edge_net_D, edge_net_G, skeleton_net_D, skeleton_net_G):
+        torch.save(self.edge_mapping_model.netD.state_dict(), outDir + edge_net_D)
+        torch.save(self.edge_mapping_model.netG.state_dict(), outDir + edge_net_G)
+        torch.save(self.skeleton_mapping_model.netD.state_dict(), outDir + skeleton_net_D)
+        torch.save(self.skeleton_mapping_model.netG.state_dict(), outDir + skeleton_net_G)
