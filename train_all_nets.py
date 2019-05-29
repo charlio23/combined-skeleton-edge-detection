@@ -198,9 +198,9 @@ lr_schd = lr_scheduler.StepLR(optimizer, step_size=3e4, gamma=0.1)
 print("Training started!")
 epochs = 40
 i = 1
-dispInterval = 1
+dispInterval = 1000
 lossAcc = 0.0
-train_size = 1
+train_size = 4
 epoch_line = []
 loss_line = []
 nnet.train()
@@ -306,4 +306,3 @@ for epoch in range(epochs):
             plt.savefig(image_dir + "/mapping.png")
             plt.clf()
         i += 1
-        exit()
