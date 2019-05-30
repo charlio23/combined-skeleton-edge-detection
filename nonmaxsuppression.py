@@ -55,7 +55,6 @@ def nonmax(img, O, r, s, m):
 
 
 def nms(img):
-    img = img.unsqueeze_(0).float()
     Ox, Oy = sobel_filters(img)
     Oxx, _ = sobel_filters(Ox)
     Oxy, Oyy = sobel_filters(Oy)
@@ -63,4 +62,4 @@ def nms(img):
     img = img.squeeze_(0).squeeze_(0)
     E = nonmax(img, O, 1, 5, 1.01)
 
-    return E
+    return E.unsqueeze_(0).unsqueeze_(0)
