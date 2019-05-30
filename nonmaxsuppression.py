@@ -51,7 +51,7 @@ def nms(img):
     Oxx, _ = sobel_filters(Ox)
     Oxy, Oyy = sobel_filters(Oy)
     O = torch.remainder(torch.atan(torch.div(torch.mul(Oyy, torch.sign(-Oxy)),(Oxx + 1e-5))), np.pi).squeeze_(0).squeeze_(0).to(torch.uint8)
-    img = img.squeeze_(0).squeeze_(0)
+    img = img.squeeze(0).squeeze(0)
     E = nonmax(img, O, [-1, 1], 1.01)
 
     return E
