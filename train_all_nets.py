@@ -36,7 +36,8 @@ print("Loading dataset...")
 
 trainDS = COCO("../train2017/",True)
 train = DataLoader(trainDS, shuffle=True, batch_size=1, num_workers=1)
-
+os.makedirs(outDir, exist_ok=True)
+os.makedirs(image_dir, exist_ok=True)
 
 print("Loading joint edge/skeleton detectors...")
 
@@ -268,7 +269,6 @@ for epoch in range(epochs):
             loss_line.append(lossDisp)
             print("%s epoch: %d iter:%d loss:%.6f"%(timestr, epoch+1, i, lossDisp))
             lossAcc = 0.0
-            os.makedirs(outDir, exist_ok=True)
             torch.save(nnet.state_dict(), outDir + network_name)
             w.save_models(outDir, edge_net_D, edge_net_G, skeleton_net_D, skeleton_net_G)
             plt.clf()
