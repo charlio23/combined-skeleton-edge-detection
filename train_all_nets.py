@@ -25,7 +25,7 @@ edge_net_D = "edge_net_D.pth"
 edge_net_G = "edge_net_G.pth"
 skeleton_net_D = "skeleton_net_D.pth"
 skeleton_net_G = "skeleton_net_G.pth"
-
+image_dir = "images-coco-final"
 def grayTrans(img):
     img = img.data.cpu().numpy()[0][0]*255.0
     img = (img).astype(np.uint8)
