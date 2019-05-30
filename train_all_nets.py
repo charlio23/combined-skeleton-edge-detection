@@ -235,23 +235,18 @@ for epoch in range(epochs):
         fused_edge = edgeOuts[-1]
         fused_skeleton = (1 - soft(skeletonOuts[-1])[0][0]).unsqueeze_(0).unsqueeze_(0)
         scale_map = obtain_scale_map(skeletonOuts[-1], scaleOuts).cuda()
-        print("Entering")
         edge_nms = nms(fused_edge).float().detach().cuda()
-        print("Exiting")
         skeleton_nms = nms(fused_skeleton).float().cuda()
         skeleton_nms[skeleton_nms < 0.5] = 0
         skeleton_nms[skeleton_nms >= 0.5] = 1
         skeleton_nms = (skeleton_nms*scale_map[:,1:]).detach()
-        print(skeleton_nms.size())
-        print(edge_nms.size())
-        print(fused_edge.size())
-        print(scale_map.size())
+
         edge_new, ske_new = w.map_and_optimize(2*fused_edge - 1, scale_map,2*edge_nms - 1, skeleton_nms)
                
-        loss_pix2pix_edge = balanced_binary_cross_entropy((edge_new + 1)/2, edge_nms)
+        #loss_pix2pix_edge = balanced_binary_cross_entropy((edge_new + 1)/2, edge_nms)
         loss_pix2pix_skeleton = regressor_loss(ske_new, skeleton_nms, skeleton_nms)
 
-        loss = loss_edge + loss_skeleton + L*loss_list_scale + loss_pix2pix_skeleton + loss_pix2pix_edge
+        loss = loss_edge + loss_skeleton + L*loss_list_scale + loss_pix2pix_skeleton
         lossAvg = loss/train_size
         lossAvg.backward()
 
