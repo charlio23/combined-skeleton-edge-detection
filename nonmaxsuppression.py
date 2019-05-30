@@ -54,4 +54,4 @@ def nms(img):
     img = img.squeeze(0).squeeze(0)
     E = nonmax(img, O, [-1, 1], 1.01)
 
-    return E
+    return E.unsqueeze(0).unsqueeze(0)
