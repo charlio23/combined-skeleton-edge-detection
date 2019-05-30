@@ -236,8 +236,8 @@ for epoch in range(epochs):
         fused_skeleton = (1 - soft(skeletonOuts[-1])[0][0]).unsqueeze_(0).unsqueeze_(0)
         scale_map = obtain_scale_map(skeletonOuts[-1], scaleOuts).cuda()
         
-        edge_nms = torch.from_numpy(nms(fused_edge.data.cpu().numpy()[0][0])).cuda().unsqueeze_(0).unsqueeze_(0).detach().float()
-        skeleton_nms = torch.from_numpy(nms(fused_skeleton.data.cpu().numpy()[0][0])).cuda().unsqueeze_(0).unsqueeze_(0).float()
+        edge_nms = nms(fused_edge[0][0]).unsqueeze_(0).unsqueeze_(0).detach().float()
+        skeleton_nms = nms(fused_skeleton.data.cpu().numpy()[0][0]).unsqueeze_(0).unsqueeze_(0).float()
         skeleton_nms[skeleton_nms < 0.5] = 0
         skeleton_nms[skeleton_nms >= 0.5] = 1
         skeleton_nms = (skeleton_nms*scale_map[:,1:]).detach()
