@@ -235,9 +235,10 @@ for epoch in range(epochs):
         fused_edge = edgeOuts[-1]
         fused_skeleton = (1 - soft(skeletonOuts[-1])[0][0]).unsqueeze_(0).unsqueeze_(0)
         scale_map = obtain_scale_map(skeletonOuts[-1], scaleOuts).cuda()
-        
+        print("Entering")
         edge_nms = nms(fused_edge.detach()).unsqueeze_(0).unsqueeze_(0).float()
-        skeleton_nms = nms(fused_skeleton.detach().unsqueeze_(0).unsqueeze_(0)).unsqueeze_(0).unsqueeze_(0).float()
+        print("Exiting")
+        skeleton_nms = nms(fused_skeleton.detach()).unsqueeze_(0).unsqueeze_(0).float()
         skeleton_nms[skeleton_nms < 0.5] = 0
         skeleton_nms[skeleton_nms >= 0.5] = 1
         skeleton_nms = (skeleton_nms*scale_map[:,1:]).detach()
