@@ -6,8 +6,8 @@ def sobel_filters(img):
     Kx = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], np.float32)
     Ky = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]], np.float32)
     
-    Kx = torch.from_numpy(np.ascontiguousarray(Kx[::-1, ::-1])).unsqueeze_(0).unsqueeze_(0)
-    Ky = torch.from_numpy(np.ascontiguousarray(Ky[::-1, ::-1])).unsqueeze_(0).unsqueeze_(0)
+    Kx = torch.from_numpy(np.ascontiguousarray(Kx[::-1, ::-1])).cuda().unsqueeze_(0).unsqueeze_(0)
+    Ky = torch.from_numpy(np.ascontiguousarray(Ky[::-1, ::-1])).cuda().unsqueeze_(0).unsqueeze_(0)
 
     Ix = torch.nn.functional.conv2d(img, Kx, padding=1)
     Iy = torch.nn.functional.conv2d(img, Ky, padding=1)
@@ -22,8 +22,8 @@ def nonmax(img, O, r, m):
     h, w = img.shape
     edge = img.clone()
     e = img.clone()*m
-    iMat = torch.t(torch.arange(h).float()*torch.ones((w,1)))
-    jMat = torch.arange(w).float()*torch.ones((h,1))
+    iMat = torch.t(torch.arange(h).float()*torch.ones((w,1))).cuda()
+    jMat = torch.arange(w).float()*torch.ones((h,1)).cuda()
     index = torch.cat([iMat.unsqueeze(-1), jMat.unsqueeze(-1)], -1)
     cosO, sinO = torch.cos(O.float()), torch.sin(O.float())
     angle = torch.cat([cosO.unsqueeze(-1), sinO.unsqueeze(-1)], -1)
