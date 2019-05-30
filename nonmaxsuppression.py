@@ -26,7 +26,7 @@ def nonmax(img, O, r, m):
     angle = torch.cat([cosO.unsqueeze(-1), sinO.unsqueeze(-1)], -1)
 
     elr = len(r)
-    d = torch.tensor(r).float().reshape(-1,1,1,1)
+    d = torch.tensor(r).cuda().float().reshape(-1,1,1,1)
     ort = index + d*angle
     xy = torch.cat([ort[:,:,:,:1].clamp(0,h - 1.001),ort[:,:,:,1:].clamp(0,w - 1.001)], -1)
     xy0 = xy.long()
@@ -46,7 +46,7 @@ def nonmax(img, O, r, m):
     return edge
 
 def nms(img):
-    
+
     Ox, Oy = sobel_filters(img)
     Oxx, _ = sobel_filters(Ox)
     Oxy, Oyy = sobel_filters(Oy)
