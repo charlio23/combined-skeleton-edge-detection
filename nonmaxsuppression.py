@@ -55,11 +55,15 @@ def nonmax(img, O, r, s, m):
 
 
 def nms(img):
+    print("first sobel")
     Ox, Oy = sobel_filters(img)
+    print("second sobel")
     Oxx, _ = sobel_filters(Ox)
+    print("third sobel")
     Oxy, Oyy = sobel_filters(Oy)
+    print("O")
     O = torch.remainder(torch.atan(torch.div(torch.mul(Oyy, torch.sign(-Oxy)),(Oxx + 1e-5))), np.pi).squeeze_(0).squeeze_(0).to(torch.uint8)
-    img = img.squeeze_(0).squeeze_(0)
-    E = nonmax(img, O, 1, 5, 1.01)
+    print("nonmax")
+    E = nonmax(img[0][0], O, 1, 5, 1.01)
 
     return E.unsqueeze_(0).unsqueeze_(0)
