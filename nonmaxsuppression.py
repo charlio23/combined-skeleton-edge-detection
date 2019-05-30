@@ -22,8 +22,8 @@ def nonmax(img, O, r, m):
     h, w = img.shape
     edge = img.clone()
     e = img.clone()*m
-    iMat = torch.t(torch.arange(h).float()*torch.ones((w,1))).cuda()
-    jMat = torch.arange(w).float()*torch.ones((h,1)).cuda()
+    iMat = torch.t(torch.arange(h).cuda().float()*torch.ones((w,1))).cuda()
+    jMat = torch.arange(w).cuda().float()*torch.ones((h,1)).cuda()
     index = torch.cat([iMat.unsqueeze(-1), jMat.unsqueeze(-1)], -1)
     cosO, sinO = torch.cos(O.float()), torch.sin(O.float())
     angle = torch.cat([cosO.unsqueeze(-1), sinO.unsqueeze(-1)], -1)
