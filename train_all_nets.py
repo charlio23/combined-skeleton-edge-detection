@@ -258,10 +258,6 @@ for epoch in range(epochs):
             
         lossAcc += loss.clone().item()
 
-        if j%train_size == 0:
-            optimizer.step()
-            optimizer.zero_grad()
-            lr_schd.step()
         if i%dispInterval == 0:
             timestr = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
             lossDisp = lossAcc/dispInterval
