@@ -77,11 +77,11 @@ skeleton_nms[skeleton_nms < 0.5] = 0
 skeleton_nms[skeleton_nms >= 0.5] = 1
 skeleton_nms = (skeleton_nms*scale_map[:,1:]).detach()
 
-fused_edge = Variable(2*fused_edge - 1,requires_grad=False).cpu()
-edge_nms = Variable(2*edge_nms - 1,requires_grad=False).cpu()
+fused_edge = Variable(2*fused_edge - 1,requires_grad=False).cuda()
+edge_nms = Variable(2*edge_nms - 1,requires_grad=False).cuda()
 
-scale_map = Variable(scale_map,requires_grad=False).cpu()
-skeleton_nms = Variable(skeleton_nms,requires_grad=False).cpu()
+scale_map = Variable(scale_map,requires_grad=False).cuda()
+skeleton_nms = Variable(skeleton_nms,requires_grad=False).cuda()
 
 skeleton_nms = Variable(skeleton_nms,requires_grad=False)
 edge_input = {'A': fused_edge, 'B': skeleton_nms, 'A_paths': None}
