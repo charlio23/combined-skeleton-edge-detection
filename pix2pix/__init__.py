@@ -36,12 +36,12 @@ class Wrapper():
 
     def edge_to_skeleton(self, input):
         self.skeleton_mapping_model.set_input(input)
-        self.skeleton_mapping_model.optimize_parameters()
+        self.skeleton_mapping_model.forward()
         return self.skeleton_mapping_model.fake_B
 
     def skeleton_to_edge(self, input):
         self.edge_mapping_model.set_input(input)
-        self.edge_mapping_model.optimize_parameters()
+        self.edge_mapping_model.forward()
         return self.edge_mapping_model.fake_B
         
     def map_and_optimize(self, edge_img, ske_img, real_edge, real_skeleton):
