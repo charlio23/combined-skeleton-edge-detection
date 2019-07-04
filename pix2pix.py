@@ -91,7 +91,7 @@ for halo in tqdm(range(1,2)):
     edge_input = {'A': fused_edge, 'B': skeleton_nms, 'A_paths': None}
     ske_input = {'A': scale_map, 'B': edge_nms, 'A_paths': None}
 
-    ske_new = (w.edge_to_skeleton(edge_input) + 1)/2
+    ske_new = (w.edge_to_skeleton(edge_input))
     edge_new = (w.skeleton_to_edge(ske_input) + 1)/2
 
 
