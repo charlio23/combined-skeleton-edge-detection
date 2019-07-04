@@ -19,6 +19,8 @@ def grayTrans(img):
     img = Image.fromarray(img, 'L')
     return img
 
+
+
 w = Wrapper()
 net_path = "checkpoints/final/Combined-COCO-pix2pix.pth"
 
@@ -96,6 +98,6 @@ for halo in tqdm(range(1,2)):
     #edge_new, ske_new = w.map_and_optimize(2*fused_edge.cpu() - 1, scale_map.cpu(),2*edge_nms.cpu() - 1, skeleton_nms.cpu())
 
     grayTrans(edge_nms).save(out_dir + "edge_ori_" + str(num) + ".png")
-    grayTrans((skeleton_nms + 1)/2).save(out_dir + "ske_ori_" + str(num) + ".png")
+    grayTrans((skeleton_nms)).save(out_dir + "ske_ori_" + str(num) + ".png")
     grayTrans(edge_new).save(out_dir + "mapped_edge_" + str(num) + ".png")
     grayTrans(ske_new).save(out_dir + "mapped_ske_" + str(num) + ".png")
